@@ -1346,7 +1346,8 @@
                 },
                 getStudentsByGradeAndCourse: async function(grade, courseCode) {
                     try {
-                        const snap = await db.ref('/high/meta/students/' + grade + '/' + courseCode).once('value');
+                        const safeCode = courseCode.replace(/[.#$[\]]/g, '_');
+                        const snap = await db.ref('/high/meta/students/' + grade + '/' + safeCode).once('value');
                         const students = snap.val();
                         if (students && students.length > 0) {
                             if(onSuccess) onSuccess(students.sort());
