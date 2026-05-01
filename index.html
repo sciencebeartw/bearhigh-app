@@ -1320,11 +1320,17 @@
                 },
                 getAllClassNames: async function() {
                     try {
-                        const snap = await db.ref('/high/students').once('value');
-                        const alls = snap.val() || {};
-                        let grades = new Set();
-                        for(let k in alls) if(alls[k].student && alls[k].student.grade) grades.add(alls[k].student.grade);
-                        if(onSuccess) onSuccess(Array.from(grades).sort());
+                        const snap = await db.ref('/high/meta/grades').once('value');
+                        const grades = snap.val();
+                        if (grades && grades.length > 0) {
+                            if(onSuccess) onSuccess(grades);
+                            return;
+                        }
+                        // Fallback logic
+                        let d = new Date();
+                        let y = d.getFullYear() - 1911;
+                        if (d.getMonth() < 7) y = y - 1;
+                        if(onSuccess) onSuccess([y + '高一', (y-1) + '高二', (y-2) + '高三']);
                     } catch(e) { if(onErr) onErr(e); }
                 },
                 getCourseCodesByGrade: async function(grade) {
