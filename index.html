@@ -1335,34 +1335,24 @@
                 },
                 getCourseCodesByGrade: async function(grade) {
                     try {
-                        const snap = await db.ref('/high/students').once('value');
-                        const alls = snap.val() || {};
-                        let courseMap = {};
-                        for(let k in alls) {
-                            let st = alls[k];
-                            if(st.student && (st.student.grade === grade || grade === '全體') && st.courseList) {
-                                st.courseList.forEach(c => courseMap[c.code] = c.name);
-                            }
+                        const snap = await db.ref('/high/meta/courses/' + grade).once('value');
+                        const courses = snap.val();
+                        if (courses && courses.length > 0) {
+                            if(onSuccess) onSuccess(courses);
+                            return;
                         }
-                        let courses = [];
-                        for(let code in courseMap) courses.push({code: code, name: courseMap[code]});
-                        if(onSuccess) onSuccess(courses);
+                        if(onSuccess) onSuccess([]);
                     } catch(e) { if(onErr) onErr(e); }
                 },
                 getStudentsByGradeAndCourse: async function(grade, courseCode) {
                     try {
-                        const snap = await db.ref('/high/students').once('value');
-                        const alls = snap.val() || {};
-                        let students = [];
-                        for(let k in alls) {
-                            let st = alls[k];
-                            if(st.student && st.student.grade === grade) {
-                                if(courseCode === "ALL" || (st.student.courses && st.student.courses.includes(courseCode))) {
-                                    students.push(k);
-                                }
-                            }
+                        const snap = await db.ref('/high/meta/students/' + grade + '/' + courseCode).once('value');
+                        const students = snap.val();
+                        if (students && students.length > 0) {
+                            if(onSuccess) onSuccess(students.sort());
+                            return;
                         }
-                        if(onSuccess) onSuccess(students.sort());
+                        if(onSuccess) onSuccess([]);
                     } catch(e) { if(onErr) onErr(e); }
                 },
                 changeUserPassword: function(name, oldP, newP) {
