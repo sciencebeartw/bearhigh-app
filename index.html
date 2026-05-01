@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ================= v10.6 山熊升大 (標籤顏色修正版) ================= */
+
+        :root {
+            --primary: #1565C0;
+            --primary-light: #E3F2FD;
+            --bg: #f2f3f7;
+            --text: #333;
+            --danger: #d32f2f;
+            --success: #2e7d32;
+            --warn: #fbc02d;
+            --popup: #ff9800;
+
+            --header-height: 90px;
+            --tabs-height: 50px;
+        }
+
+        /* 1. 全域鎖定 */
+        html,
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* 2. App 容器 */
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100dvh;
+            background: #f2f3f7;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Admin & God Mode */
+        .admin-mode-border {
+            border: 5px solid var(--danger);
+            box-sizing: border-box;
+        }
+
+        .admin-mode-border::after {
+            content: "👀 上帝視角模式 (唯讀)";
+            position: fixed;
+            top: 150px;
+            right: 10px;
+            background: var(--danger);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 9999;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        #god-mode-exit-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--danger);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+            z-index: 10000;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Loading */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 3000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Login Screen */
+        #login-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background: white;
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .logo-img {
+            max-width: 180px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin: 10px 0 5px;
+            color: var(--primary);
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .sub-title {
+            font-size: 1rem;
+            color: #78909c;
+            margin-bottom: 40px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .input-group {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: 0.3s;
+            background: #fafafa;
+            text-align: center;
+            color: #333;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            outline: none;
+            background: white;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(21, 101, 192, 0.3);
+        }
+
+        /* Admin Dashboard */
+        #admin-screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            padding: 20px;
+            background: #f2f3f7;
+            overflow-y: auto;
+        }
+
+        .admin-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .admin-select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .admin-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            margin-top: 5px;
+        }
+
+        .admin-btn-logout {
+            background: #90a4ae;
+            margin-top: 20px;
+        }
+
+        .input-label {
+            font-size: 0.85rem;
+            color: #78909c;
+            font-weight: bold;
+            margin-bottom: 4px;
+            margin-left: 4px;
+            display: block;
+            text-align: left;
+        }
+
+        /* Main Screen */
+        #main-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Header */
+        .header-bar {
+            background: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            height: var(--header-height);
+            box-sizing: border-box;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo-small {
+            height: 65px;
+            width: auto;
+        }
+
+        .student-info-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .student-info {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--primary);
+            line-height: 1.1;
+            margin-bottom: 0px;
+        }
+
+        .class-info {
+            font-size: 1rem;
+            color: #78909c;
+            font-weight: bold;
+        }
+
+        /* Header Buttons */
+        .header-right {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .header-btn {
+            font-size: 0.8rem;
+            color: #666;
+            border: 1px solid #ddd;
+            padding: 4px 10px;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Tabs */
+        .sticky-wrapper {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            z-index: 9;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            margin: 0;
+            height: var(--tabs-height);
+        }
+
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            line-height: var(--tabs-height);
+            color: #999;
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tab-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Func Bar */
+        .sticky-func-bar {
+            background: #f2f3f7;
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 4px 5px -2px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            z-index: 8;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Scrollable Container */
+        .scroll-container {
+            flex: 1;
+            height: 100%;
+            overflow-y: auto;
+            padding: 5px 15px 80px 15px !important;
+            scroll-behavior: smooth;
+            background: #f2f3f7;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--primary);
+            position: relative;
+            scroll-margin-top: 200px;
+        }
+
+        /* 🔴 修正：顏色定義 */
+        .card.tutoring {
+            border-left-color: #7e57c2;
+        }
+
+        /* 紫色 */
+        .card.holiday {
+            border-left-color: #e53935;
+            background: #fff5f5;
+        }
+
+        /* 紅色 */
+        .card.added {
+            border-left-color: var(--success);
+        }
+
+        /* 綠色 (加課) */
+        .card.modified {
+            border-left-color: var(--success);
+        }
+
+        /* 綠色 (調課) */
+        .card.announcement {
+            border-left-color: var(--warn);
+        }
+
+        /* 黃色 */
+
+        .date-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .date-text {
+            font-weight: bold;
+            color: #546e7a;
+            font-size: 1rem;
+        }
+
+        .title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: #37474f;
+            margin-bottom: 5px;
+        }
+
+        .time {
+            color: #90a4ae;
+            font-size: 0.95rem;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .status-cancelled {
+            text-decoration: line-through;
+            color: #cfd8dc;
+        }
+
+        /* 🔴 修正：標籤顏色定義 */
+        .tag {
+            font-size: 0.8rem;
+            padding: 3px 10px;
+            border-radius: 12px;
+            color: #fff;
+            background: var(--primary);
+            font-weight: bold;
+        }
+
+        /* 正課藍色 */
+        .tag.tutoring {
+            background: #9575cd;
+        }
+
+        /* 輔導紫色 */
+        .tag.holiday {
+            background: #ef5350;
+        }
+
+        /* 停課紅色 */
+        .tag.exam {
+            background: #ffa726;
+        }
+
+        /* 模考橘色 */
+        .tag.announcement {
+            background: var(--warn);
+            color: #37474f;
+        }
+
+        /* 公告黃色 */
+        .tag.added {
+            background: var(--success);
+        }
+
+        /* 加課綠色 */
+        .tag.modified {
+            background: var(--success);
+        }
+
+        /* 調課綠色 */
+        .tag.popup {
+            background: var(--popup);
+            color: white;
+        }
+
+        .schedule-note {
+            font-size: 0.9rem;
+            color: #78909c;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* Course Item */
+        .course-item {
+            background: white;
+            margin: 15px 0;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .course-arrow {
+            color: #ccc;
+        }
+
+        /* Calendar Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 420px;
+            height: 80vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        .cal-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cal-nav button {
+            border: none;
+            background: var(--primary-light);
+            color: var(--primary);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .cal-today-btn {
+            font-size: 0.9rem !important;
+            width: auto !important;
+            padding: 5px 15px !important;
+            border-radius: 20px !important;
+            margin: 0 10px;
+            white-space: nowrap;
+            border: 2px solid var(--primary-light) !important;
+            flex-shrink: 0;
+            cursor: pointer;
+            background: #fff;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .cal-nav-title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .cal-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            scroll-behavior: smooth;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .cal-header {
+            text-align: center;
+            color: #90a4ae;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .cal-cell {
+            min-height: 60px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            scroll-margin-top: 10px;
+        }
+
+        .cal-cell.today {
+            border: 2px solid var(--primary);
+            background: #e3f2fd;
+        }
+
+        .cal-date {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #b0bec5;
+            margin: 2px 0 2px 2px;
+        }
+
+        .cal-cell.today .cal-date {
+            color: var(--primary);
+        }
+
+        .cal-dot {
+            font-size: 0.65rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            background: var(--primary);
+            color: white;
+            margin-bottom: 2px;
+            width: 90%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            font-weight: bold;
+        }
+
+        .cal-dot.holiday {
+            background: var(--danger);
+        }
+
+        .cal-dot.exam {
+            background: #ffa726;
+        }
+
+        .cal-dot.tutoring {
+            background: #7e57c2;
+        }
+
+        .cal-footer {
+            padding: 10px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            background: white;
+        }
+
+        /* Announcement Modal */
+        #announcement-modal .modal-content {
+            height: auto;
+            max-height: 70vh;
+            padding: 0;
+            border: 2px solid var(--warn);
+        }
+
+        .anno-header {
+            background: var(--warn);
+            color: white;
+            padding: 15px;
+            font-weight: 900;
+            font-size: 1.3rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .anno-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .anno-item {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .anno-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .anno-title {
+            color: #37474f;
+            font-weight: 900;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .anno-text {
+            color: #546e7a;
+            line-height: 1.6;
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        .anno-text a {
+            color: #1565C0;
+            text-decoration: underline;
+        }
+
+        .anno-footer {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+
+        .anno-btn {
+            background: var(--warn);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 25px;
+            font-weight: 900;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 160, 0, 0.4);
+        }
+
+        /* Grades UI */
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .score-row:last-child {
+            border-bottom: none;
+        }
+
+        .exam-name-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-right: 15px;
+        }
+
+        .exam-line1 {
+            font-size: 0.9rem;
+            color: #90a4ae;
+            font-weight: bold;
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+
+        .exam-line2 {
+            font-size: 0.9rem;
+            color: #90a4ae;
+            font-weight: bold;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .exam-main {
+            font-size: 1.6rem;
+            color: var(--primary);
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .pending-text {
+            font-size: 0.85rem;
+            color: #90a4ae;
+            font-weight: bold;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .score-wrapper {
+            text-align: right;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .score-val {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #37474f;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .score-val.score-red {
+            color: var(--danger);
+        }
+
+        .score-unit {
+            font-size: 1rem;
+            color: #b0bec5;
+            font-weight: normal;
+            margin-left: 3px;
+        }
+
+        .score-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .score-input {
+            width: 70px;
+            padding: 8px;
+            border: 2px solid var(--danger);
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--danger);
+            outline: none;
+        }
+
+        .submit-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Password Modal */
+        .pwd-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pwd-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .pwd-title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .pwd-input-group {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .pwd-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .pwd-input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .pwd-btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .pwd-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .pwd-btn-cancel {
+            background: #eee;
+            color: #666;
+        }
+
+        .pwd-btn-ok {
+            background: var(--primary);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container" id="appContainer">
+
+        <div id="full-loader" class="loader-overlay">
+            <div class="loader"></div>
+            <div style="margin-top:10px;color:#90a4ae;font-weight:bold;">資料讀取中...</div>
+        </div>
+
+        <div id="login-screen">
+            <img src="https://www.sciencebear.com.tw/high/logo.png" class="logo-img">
+            <h2>高中部學生專區</h2>
+            <div class="sub-title">查詢課表 ‧ 成績追蹤</div>
+            <div class="input-group"><input type="text" id="loginName" placeholder="學生姓名"></div>
+            <div class="input-group"><input type="password" id="loginPass" placeholder="登入密碼 (預設家長手機)"
+                    onkeydown="if(event.key==='Enter') doLogin()"></div>
+            <button class="login-btn" onclick="doLogin()">登入查詢</button>
+            <div id="loginMsg" style="color:#d32f2f; margin-top:15px; font-weight:bold; min-height:20px;"></div>
+        </div>
+
+        <div id="admin-screen">
+            <div class="admin-card">
+                <div class="admin-title">👀 上帝視角 (模擬登入)</div>
+                <select id="adminClassSelect" class="admin-select" onchange="loadAdminSubjects()">
+                    <option value="" disabled selected>請選擇年級</option>
+                </select>
+                <select id="adminSubjectSelect" class="admin-select" disabled onchange="loadStudentList()">
+                    <option value="" disabled selected>請先選擇年級</option>
+                </select>
+                <select id="adminStudentSelect" class="admin-select" disabled>
+                    <option value="" disabled selected>請先選擇科目</option>
+                </select>
+                <button class="admin-btn" style="background:var(--primary);" onclick="startGodMode()">進入學生畫面</button>
+            </div>
+            <div class="admin-card">
+                <div class="admin-title">📢 發布公告 / 行事曆</div>
+                <select id="evtGrade" class="admin-select" onchange="loadCourseCodes()">
+                    <option value="全體">全體 (全校公告)</option>
+                </select>
+                <select id="evtCode" class="admin-select">
+                    <option value="全體" selected>全體 (全校事件)</option>
+                </select>
+                <div style="display:flex; gap:10px;"><select id="evtType" class="admin-select">
+                        <option value="彈窗">💥 彈窗</option>
+                        <option value="公告">📢 公告</option>
+                        <option value="停課">🔴 停課</option>
+                        <option value="調課">🔵 調課</option>
+                        <option value="加課">🟢 加課</option>
+                        <option value="模考">🟠 模考</option>
+                        <option value="正課">🔵 正課</option>
+                    </select>
+                    <div style="flex:1;">
+                        <span class="input-label">事件日期 (C欄)</span>
+                        <input type="date" id="evtDate" class="admin-select">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <span class="input-label">開始顯示 (E欄)</span>
+                        <input type="date" id="evtStartDate" class="admin-select">
+                    </div>
+                    <div style="flex:1;">
+                        <span class="input-label">結束顯示 (F欄)</span>
+                        <input type="date" id="evtEndDate" class="admin-select">
+                    </div>
+                </div>
+
+                <input type="text" id="evtContent" class="admin-select" placeholder="內容 / 備註 (H欄)">
+                <input type="text" id="evtTime" class="admin-select" value="18:00-21:30" placeholder="顯示時間 (D欄)">
+                <button class="admin-btn" style="background:var(--success);" onclick="doAddEvent()">🚀 確認發布</button>
+            </div>
+            <button class="admin-btn admin-btn-logout" onclick="doLogout()">登出管理者</button>
+        </div>
+
+        <div id="main-screen">
+            <div class="header-bar">
+                <div class="header-left">
+                    <img src="https://www.sciencebear.com.tw/high/logo.png" class="header-logo-small">
+                    <div class="student-info-box">
+                        <div class="student-info" id="headName">同學</div>
+                        <div class="class-info" id="headGrade">年級</div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" onclick="refreshData()">刷新</button>
+                    <button class="header-btn" onclick="openPwdModal()">修改密碼</button>
+                    <button class="header-btn" onclick="doLogout()">登出</button>
+                </div>
+            </div>
+
+            <div class="sticky-wrapper">
+                <div class="tabs">
+                    <div class="tab-item active" onclick="switchTab(0)">📅 行事曆</div>
+                    <div class="tab-item" onclick="switchTab(1)">📚 我的課程</div>
+                    <div class="tab-item" onclick="switchTab(2)">📊 成績紀錄</div>
+                </div>
+            </div>
+
+            <!-- Tab 0: 行事曆 -->
+            <div id="tab-0" class="tab-content" style="display:flex;">
+                <div id="tab-0-func-bar" class="sticky-func-bar">
+                    <button onclick="openCalendar()"
+                        style="flex:1; padding:12px; background:white; border:2px solid var(--primary-light); border-radius:12px; color:var(--primary); font-weight:bold; font-size:1rem; cursor:pointer;">📅
+                        查看月曆總表</button>
+                    <button onclick="scrollToTodayList()"
+                        style="width:80px; padding:12px; background:var(--warn); border:none; border-radius:12px; color:#37474f; font-weight:bold; font-size:1rem; cursor:pointer;">今天</button>
+                </div>
+                <div id="schedule-scroll-area" class="scroll-container">
+                    <div id="schedule-list"></div>
+                </div>
+            </div>
+
+            <!-- Tab 1: 我的課程 -->
+            <div id="tab-1" class="tab-content">
+                <div class="scroll-container">
+                    <div id="course-list-view"></div>
+                    <div id="course-detail-view" style="display:none;">
+                        <button onclick="backToCourseList()"
+                            style="width:100%; margin-bottom:15px; padding:10px; background:#eceff1; border:none; border-radius:8px; color:#546e7a; font-weight:bold; cursor:pointer;">🔙
+                            回到課程列表</button>
+                        <div id="course-schedule-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: 成績紀錄 -->
+            <div id="tab-2" class="tab-content">
+                <div class="scroll-container"></div>
+            </div>
+        </div>
+
+        <button id="god-mode-exit-btn" onclick="exitGodMode()">退出上帝視角</button>
+
+    </div>
+
+    <div id="cal-modal" class="modal" onclick="closeCalendar()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="cal-nav">
+                <button onclick="changeMonth(-1)">&#10094;</button>
+                <div style="display:flex; align-items:center;">
+                    <div class="cal-nav-title" id="cal-nav-title">2026年 2月</div>
+                    <button class="cal-today-btn" onclick="goToToday()">今天</button>
+                </div>
+                <button onclick="changeMonth(1)">&#10095;</button>
+            </div>
+            <div class="cal-scroll-area" id="cal-scroll-area">
+                <div id="cal-grid" class="cal-grid"></div>
+            </div>
+            <div class="cal-footer">
+                <button onclick="closeCalendar()"
+                    style="background:#eee; border:none; padding:10px 40px; border-radius:20px; font-weight:bold; color:#666; cursor:pointer;">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="announcement-modal" class="modal">
+        <div class="modal-content" style="max-width:350px;">
+            <div class="anno-header">💥 重要通知</div>
+            <div class="anno-body" id="anno-list"></div>
+            <div class="anno-footer">
+                <button class="anno-btn" onclick="closeAnnouncement()">我收到了 👌</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pwdModal" class="pwd-overlay">
+        <div class="pwd-box">
+            <div class="pwd-title">🔐 修改個人密碼</div>
+            <div class="pwd-input-group"><input type="password" id="oldP" class="pwd-input" placeholder="請輸入舊密碼"></div>
+            <div class="pwd-input-group"><input type="password" id="newP" class="pwd-input" placeholder="設定新密碼"></div>
+            <div class="pwd-btn-row">
+                <button class="pwd-btn pwd-btn-cancel" onclick="closePwdModal()">取消</button>
+                <button class="pwd-btn pwd-btn-ok" onclick="doChangePwd()">確認修改</button>
+            </div>
+        </div>
+    </div>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyE_Mcd1hBLAgt1TXr-oezzXqts_ruoovBqgGFWPHTsEhqmjGp1FT4qhqVsVzJ8xZgNwg/exec"; 
+        
+        function doPostAction(action, data, onSuccess, onErr, adminPwd, retries = 3) {
+            if(SCRIPT_URL.includes("請在後續部署後換上正確的")) {
+               alert("⚠️ 錯誤：尚未填入 GAS Web App 網址在 index.html 內！");
+               if(onErr) onErr("No Web App URL");
+               return;
+            }
+            fetch(SCRIPT_URL, {
+               method: "POST",
+               headers: { "Content-Type": "text/plain" },
+               body: JSON.stringify({ action: action, data: data, adminPassword: adminPwd || "" })
+            })
+            .then(res => res.json())
+            .then(res => { if(onSuccess) onSuccess(res); })
+            .catch(err => {
+                console.warn("GAS Webhook 遇到塞車或錯誤，剩下重試次數:", retries, err);
+                if (retries > 0) {
+                    setTimeout(() => {
+                        doPostAction(action, data, onSuccess, onErr, adminPwd, retries - 1);
+                    }, 1000 + Math.random() * 1000); // 隨機延遲 1~2 秒再重試
+                } else {
+                    console.error("重試失敗:", err);
+                    if(onErr) onErr(err);
+                }
+            });
+        }
+    
+        function createApiMethods(onSuccess, onErr) {
+            return {
+                getStudentData: async function(name, pass) {
+                    try {
+                        const safeName = name.replace(/[.#$[\]]/g, ',');
+                        db.ref('/high/students/' + safeName).once('value').then(snap => {
+                            if (snap.exists()) {
+                                const ref = db.ref('/high/students/' + safeName);
+                                ref.off('value');
+                                ref.on('value', snap2 => {
+                                    const val = snap2.val();
+                                    if (!val) { if(onErr) onErr({success: false, msg: "找不到該學生"}); return; }
+                                    const storedPwd = (val.sysPwd || "").toString().trim();
+                                    if (storedPwd !== pass.toString().trim()) { if(onErr) onErr({success: false, msg: "密碼錯誤"}); return; }
+                                    val.success = true;
+                                    if(onSuccess) onSuccess(val);
+                                }, err => { if(onErr) onErr(err); });
+                            } else {
+                                db.ref('/high/teachers/' + safeName).once('value').then(snap3 => {
+                                    if (snap3.exists()) {
+                                        const ref = db.ref('/high/teachers/' + safeName);
+                                        ref.off('value');
+                                        ref.on('value', snap4 => {
+                                            const val = snap4.val();
+                                            if (!val) { if(onErr) onErr({success: false, msg: "找不到該老師"}); return; }
+                                            const storedPwd = (val.password || "").toString().trim();
+                                            if (storedPwd !== pass.toString().trim()) { if(onErr) onErr({success: false, msg: "密碼錯誤"}); return; }
+                                            val.success = true;
+                                            
+                                            // 動態判斷：如果是 admin 登入，且密碼驗證通過，則給予上帝視角權限
+                                            if (name.toLowerCase() === "admin" || (val.account && val.account.toLowerCase() === "admin")) {
+                                                val.isAdmin = true;
+                                                val.token = "local-bypass";
+                                            }
+                                            
+                                            if(onSuccess) onSuccess(val);
+                                        }, err => { if(onErr) onErr(err); });
+                                    } else {
+                                        if(onErr) onErr({success: false, msg: "帳號或密碼錯誤"});
+                                    }
+                                }).catch(err => { if(onErr) onErr(err); });
+                            }
+                        }).catch(err => { if(onErr) onErr(err); });
+                    } catch(e) { if(onErr) onErr(e); }
+                },
+                getStudentDataByAdmin: async function(cls, name, adminToken) {
+                    try {
+                        const safeName = name.replace(/[.#$[\]]/g, ',');
+                        const ref = db.ref('/high/students/' + safeName);
+                        ref.off('value');
+                        ref.on('value', snap => {
+                            const val = snap.val();
+                            if (!val) { if(onErr) onErr({success: false, msg: "找不到該學生"}); return; }
+                            val.success = true;
+                            if(onSuccess) onSuccess(val);
+                        }, err => { if(onErr) onErr(err); });
+                    } catch(e) { if(onErr) onErr(e); }
+                },
+                getAllClassNames: async function() {
+                    try {
+                        const snap = await db.ref('/high/students').once('value');
+                        const alls = snap.val() || {};
+                        let grades = new Set();
+                        for(let k in alls) if(alls[k].student && alls[k].student.grade) grades.add(alls[k].student.grade);
+                        if(onSuccess) onSuccess(Array.from(grades).sort());
+                    } catch(e) { if(onErr) onErr(e); }
+                },
+                getCourseCodesByGrade: async function(grade) {
+                    try {
+                        const snap = await db.ref('/high/students').once('value');
+                        const alls = snap.val() || {};
+                        let courseMap = {};
+                        for(let k in alls) {
+                            let st = alls[k];
+                            if(st.student && (st.student.grade === grade || grade === '全體') && st.courseList) {
+                                st.courseList.forEach(c => courseMap[c.code] = c.name);
+                            }
+                        }
+                        let courses = [];
+                        for(let code in courseMap) courses.push({code: code, name: courseMap[code]});
+                        if(onSuccess) onSuccess(courses);
+                    } catch(e) { if(onErr) onErr(e); }
+                },
+                getStudentsByGradeAndCourse: async function(grade, courseCode) {
+                    try {
+                        const snap = await db.ref('/high/students').once('value');
+                        const alls = snap.val() || {};
+                        let students = [];
+                        for(let k in alls) {
+                            let st = alls[k];
+                            if(st.student && st.student.grade === grade) {
+                                if(courseCode === "ALL" || (st.student.courses && st.student.courses.includes(courseCode))) {
+                                    students.push(k);
+                                }
+                            }
+                        }
+                        if(onSuccess) onSuccess(students.sort());
+                    } catch(e) { if(onErr) onErr(e); }
+                },
+                changeUserPassword: function(name, oldP, newP) {
+                    doPostAction("changeUserPassword", {name: name, oldPass: oldP, newPass: newP}, onSuccess, onErr);
+                },
+                addCalendarEvent: function(f) {
+                    doPostAction("addCalendarEvent", f, onSuccess, onErr);
+                },
+                submitScore: function(f) {
+                    doPostAction("submit_score", f, onSuccess, onErr);
+                }
+            };
+        }
+    
+        const google = {
+            script: {
+                run: {
+                    withSuccessHandler: function(onSuccess) {
+                        return {
+                            withFailureHandler: function(onErr) { return createApiMethods(onSuccess, onErr); },
+                            ...createApiMethods(onSuccess, console.error)
+                        };
+                    },
+                    withFailureHandler: function(onErr) {
+                        return {
+                            withSuccessHandler: function(onSuccess) { return createApiMethods(onSuccess, onErr); },
+                            ...createApiMethods(null, onErr)
+                        };
+                    }
+                }
+            }
+        };
+    </script>
+
+    <script>
+        var gData = null;
+        var gPass = "";
+        var adminToken = "";
+        var currentCalDate = new Date();
+        var isAdminMode = false;
+        var isFirstLoad = true;
+
+        function doLogin() {
+            var name = document.getElementById('loginName').value.trim();
+            var pass = document.getElementById('loginPass').value.trim();
+            if (!name || !pass) { document.getElementById('loginMsg').innerText = "請輸入完整資訊"; return; }
+            document.getElementById('full-loader').style.display = 'flex';
+            gPass = pass;
+            isFirstLoad = true;
+            google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFail).getStudentData(name, pass);
+        }
+
+        function onSuccess(res) {
+            document.getElementById('full-loader').style.display = 'none';
+            if (!res.success) { document.getElementById('loginMsg').innerText = res.msg; return; }
+            document.getElementById('login-screen').style.display = 'none';
+            if (res.isAdmin) {
+                adminToken = res.token;
+                showAdminDashboard();
+            } else { enterStudentView(res); }
+        }
+
+        function enterStudentView(res) {
+            gData = res;
+            document.getElementById('main-screen').style.display = 'flex';
+            document.getElementById('headName').innerText = res.student.name;
+            document.getElementById('headGrade').innerText = inferGradeDisplay(res.student.courses, res.student.grade);
+
+            renderSchedule(res.schedule);
+            renderCourses(res.courseList);
+            renderGrades(res.grades);
+
+            currentCalDate = new Date();
+            renderCalendarGrid(res.schedule);
+
+            if (isFirstLoad) {
+                setTimeout(scrollToTodayList, 500);
+                isFirstLoad = false;
+            }
+
+            if (res.announcements && res.announcements.length > 0) {
+                showAnnouncements(res.announcements);
+            }
+        }
+
+        // Pwd Logic
+        function openPwdModal() { document.getElementById('pwdModal').style.display = 'flex'; }
+        function closePwdModal() {
+            document.getElementById('pwdModal').style.display = 'none';
+            document.getElementById('oldP').value = "";
+            document.getElementById('newP').value = "";
+        }
+        function doChangePwd() {
+            var oldP = document.getElementById('oldP').value;
+            var newP = document.getElementById('newP').value;
+            if (!oldP || !newP) { alert("請輸入舊密碼與新密碼！"); return; }
+            if (isAdminMode) { alert("管理者模式下不可修改學生密碼！"); return; }
+            document.getElementById('full-loader').style.display = 'flex';
+            google.script.run.withSuccessHandler(function (res) {
+                document.getElementById('full-loader').style.display = 'none';
+                if (res.success) { alert("✅ 修改成功！"); closePwdModal(); gPass = newP; }
+                else { alert("❌ 修改失敗: " + res.msg); }
+            }).changeUserPassword(gData.student.name, oldP, newP);
+        }
+
+        // Scroll
+        function scrollToTodayList() {
+            var todayStr = new Date().toISOString().split('T')[0];
+            var cards = document.querySelectorAll('#tab-0 .card');
+            var container = document.getElementById('schedule-scroll-area');
+
+            if (!container) return;
+
+            for (var i = 0; i < cards.length; i++) {
+                var dateText = cards[i].querySelector('.date-text').innerText;
+                var datePart = dateText.split(' ')[1];
+                if (datePart >= todayStr) {
+                    var offset = cards[i].offsetTop;
+                    container.scrollTo({ top: offset - 10, behavior: 'smooth' });
+                    return;
+                }
+            }
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        }
+
+        function switchTab(idx) {
+            document.querySelectorAll('.tab-item').forEach((t, i) => { if (i === idx) t.classList.add('active'); else t.classList.remove('active'); });
+            document.getElementById('tab-0').style.display = (idx === 0) ? 'flex' : 'none';
+            document.getElementById('tab-1').style.display = (idx === 1) ? 'flex' : 'none';
+            document.getElementById('tab-2').style.display = (idx === 2) ? 'flex' : 'none';
+            if (idx === 1) backToCourseList();
+            if (idx === 0) { setTimeout(scrollToTodayList, 100); } else { window.scrollTo(0, 0); }
+        }
+
+        // Helpers
+        function renderCourses(courses) {
+            var d = document.getElementById('course-list-view');
+            if (courses.length === 0) { d.innerHTML = "<div style='text-align:center; color:#aaa; margin-top:20px;'>無報名課程</div>"; return; }
+            var html = "";
+            courses.forEach(c => {
+                html += `<div class="course-item" onclick="filterCourse('${c.code}', '${c.name}')"><div class="title" style="margin:0; font-size:1.1rem;">${c.name}</div><div class="course-arrow">➜</div></div>`;
+            });
+            d.innerHTML = html;
+        }
+        function filterCourse(code, name) {
+            document.getElementById('course-list-view').style.display = 'none';
+            document.getElementById('course-detail-view').style.display = 'block';
+            var detailContainer = document.getElementById('course-schedule-list');
+            var filteredEvents = gData.schedule.filter(e => e.code === code);
+            if (filteredEvents.length === 0) { detailContainer.innerHTML = "<div style='text-align:center; padding:30px; color:#b0bec5;'>此課程近期無安排</div>"; }
+            else {
+                var html = "";
+                filteredEvents.forEach(e => {
+                    // 🔴 修正：根據 type 決定 cardClass
+                    var cardClass = "card";
+                    if (e.type === "輔導") cardClass += " tutoring";
+                    else if (e.type.includes("放假") || e.type === "停課" || e.status === "suspended") cardClass += " holiday";
+                    else if (e.type === "調課") cardClass += " modified";
+                    else if (e.type === "加課") cardClass += " added";
+                    else if (e.type === "公告") cardClass += " announcement";
+
+                    // 🔴 修正：根據 type 決定 tagHtml
+                    var tagHtml = `<span class="tag">正課</span>`;
+                    if (e.type === "模考") tagHtml = `<span class="tag exam">模考</span>`;
+                    else if (e.type === "輔導") tagHtml = `<span class="tag tutoring">輔導</span>`;
+                    else if (e.type.includes("放假") || e.type === "停課" || e.status === "suspended") tagHtml = `<span class="tag holiday">${e.type}</span>`;
+                    else if (e.type === "調課") tagHtml = `<span class="tag modified">調課</span>`;
+                    else if (e.type === "加課") tagHtml = `<span class="tag added">加課</span>`;
+                    else if (e.type === "公告") tagHtml = `<span class="tag announcement">公告</span>`;
+
+                    var titleClass = "title"; if (e.status === "cancelled") titleClass += " status-cancelled";
+                    var noteHtml = ""; if (e.note && e.note.trim() !== "" && e.note.trim() !== e.title.trim()) noteHtml = `<div class="schedule-note">${e.note}</div>`;
+                    html += `<div class="${cardClass}"><div class="date-row"><span class="date-text">📅 ${e.date} (${getDayName(e.date)})</span>${tagHtml}</div><div class="${titleClass}">${e.title}</div>${noteHtml}<div class="time">⏰ ${e.time}</div></div>`;
+                });
+                detailContainer.innerHTML = `<div style='padding:10px 15px; font-weight:bold; color:#1565C0;'>📘 ${name} - 專屬課表</div>` + html;
+            }
+            document.querySelector('#tab-1 .scroll-container').scrollTo(0, 0);
+        }
+        function backToCourseList() {
+            document.getElementById('course-detail-view').style.display = 'none';
+            document.getElementById('course-list-view').style.display = 'block';
+            document.querySelector('#tab-1 .scroll-container').scrollTo(0, 0);
+        }
+
+        function showAnnouncements(list) {
+            var html = "";
+            list.forEach(a => {
+                var contentHtml = linkify(a.content);
+                html += `<div class="anno-item"><div class="anno-title">${a.title}</div><div class="anno-text">${contentHtml}</div></div>`;
+            });
+            document.getElementById('anno-list').innerHTML = html;
+            document.getElementById('announcement-modal').style.display = 'flex';
+        }
+
+        function linkify(text) {
+            var urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, function (url) {
+                return '<a href="' + url + '" target="_blank">' + url + '</a>';
+            });
+        }
+
+        function closeAnnouncement() { document.getElementById('announcement-modal').style.display = 'none'; }
+        function openCalendar() { document.getElementById('cal-modal').style.display = 'flex'; setTimeout(scrollToToday, 100); }
+        function closeCalendar() { document.getElementById('cal-modal').style.display = 'none'; }
+        function goToToday() { currentCalDate = new Date(); renderCalendarGrid(gData.schedule); setTimeout(scrollToToday, 100); }
+        function scrollToToday() { var todayEl = document.querySelector('.cal-cell.today'); if (todayEl) { todayEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }
+        function changeMonth(offset) { currentCalDate.setMonth(currentCalDate.getMonth() + offset); renderCalendarGrid(gData.schedule); }
+        function showAdminDashboard() { document.getElementById('admin-screen').style.display = 'block'; google.script.run.withSuccessHandler(function (c) { var s = document.getElementById('adminClassSelect'); s.innerHTML = '<option value="" disabled selected>請選擇年級</option>'; var eg = document.getElementById('evtGrade'); eg.innerHTML = '<option value="全體">全體 (全校公告)</option>'; c.forEach(x => { s.innerHTML += `<option value="${x}">${x}</option>`; eg.innerHTML += `<option value="${x}">${x}</option>`; }); }).getAllClassNames(); }
+        function loadAdminSubjects() { var g = document.getElementById('adminClassSelect').value; var s = document.getElementById('adminSubjectSelect'); var st = document.getElementById('adminStudentSelect'); s.innerHTML = '<option>載入中...</option>'; s.disabled = true; st.innerHTML = '<option value="" disabled selected>請先選擇科目</option>'; st.disabled = true; google.script.run.withSuccessHandler(function (c) { s.innerHTML = '<option value="" disabled selected>請選擇科目</option><option value="ALL">📋 全部學生</option>'; c.forEach(x => { s.innerHTML += `<option value="${x.code}">${x.name}</option>` }); s.disabled = false; }).getCourseCodesByGrade(g); }
+        function loadStudentList() { var c = document.getElementById('adminClassSelect').value; var o = document.getElementById('adminSubjectSelect').value; var s = document.getElementById('adminStudentSelect'); s.innerHTML = '<option>載入中...</option>'; s.disabled = true; google.script.run.withSuccessHandler(function (n) { s.innerHTML = '<option value="" disabled selected>請選擇學生</option>'; if (n.length == 0) s.innerHTML = '<option value="" disabled>無學生</option>'; n.forEach(x => { s.innerHTML += `<option value="${x}">${x}</option>` }); s.disabled = false; }).getStudentsByGradeAndCourse(c, o); }
+        function loadCourseCodes() { var g = document.getElementById('evtGrade').value; var s = document.getElementById('evtCode'); if (g == '全體') { s.innerHTML = '<option value="全體" selected>全體 (全校事件)</option>'; return; } s.innerHTML = '<option>載入中...</option>'; s.disabled = true; google.script.run.withSuccessHandler(function (c) { s.innerHTML = '<option value="" disabled selected>請選擇課程</option><option value="全體">全體 (該年級公告)</option>'; c.forEach(x => { s.innerHTML += `<option value="${x.code}">${x.name} (${x.code})</option>` }); s.disabled = false; }).getCourseCodesByGrade(g); }
+
+        function doAddEvent() {
+            var g = document.getElementById('evtGrade').value;
+            var t = document.getElementById('evtType').value;
+            var d = document.getElementById('evtDate').value;
+            var sd = document.getElementById('evtStartDate').value;
+            var ed = document.getElementById('evtEndDate').value;
+            var c = document.getElementById('evtContent').value;
+            var tm = document.getElementById('evtTime').value;
+            var cd = document.getElementById('evtCode').value;
+
+            if ((t === "正課" || t === "調課" || t === "停課") && !d) { alert("此類型必須填寫「事件日期」"); return; }
+
+            if (!confirm("確定發布？")) return;
+            document.getElementById('full-loader').style.display = 'flex';
+
+            var f = { grade: g, type: t, eventDate: d, startDate: sd, endDate: ed, content: c, time: tm, code: cd };
+            google.script.run.withSuccessHandler(function (r) {
+                document.getElementById('full-loader').style.display = 'none';
+                if (r.success) { alert("✅ 成功"); document.getElementById('evtContent').value = ""; }
+                else { alert("❌ " + r.msg); }
+            }).addCalendarEvent(f);
+        }
+
+        function startGodMode() { var c = document.getElementById('adminClassSelect').value; var n = document.getElementById('adminStudentSelect').value; if (!c || !n) { alert("請選擇"); return; } document.getElementById('full-loader').style.display = 'flex'; isAdminMode = true; google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; if (r.success) { document.getElementById('admin-screen').style.display = 'none'; document.getElementById('appContainer').classList.add('admin-mode-border'); document.getElementById('god-mode-exit-btn').style.display = 'block'; enterStudentView(r); } else { alert(r.msg); } }).getStudentDataByAdmin(c, n, adminToken); }
+        function exitGodMode() { isAdminMode = false; gData = null; document.getElementById('main-screen').style.display = 'none'; document.getElementById('god-mode-exit-btn').style.display = 'none'; document.getElementById('appContainer').classList.remove('admin-mode-border'); document.getElementById('admin-screen').style.display = 'block'; }
+        function refreshData() { if (!gData) return; document.getElementById('full-loader').style.display = 'flex'; if (isAdminMode) { google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; enterStudentView(r); }).getStudentDataByAdmin(gData.student.grade, gData.student.name, adminToken); } else { google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; enterStudentView(r); }).getStudentData(gData.student.name, gPass); } }
+        function onFail(e) {
+            document.getElementById('full-loader').style.display = 'none';
+            var msg = (e && e.message) ? e.message : String(e);
+            // 若登入畫面可見，顯示在 loginMsg；否則用彈窗顯示
+            var loginScreen = document.getElementById('login-screen');
+            var loginMsg = document.getElementById('loginMsg');
+            if (loginScreen && loginScreen.style.display !== 'none' && loginMsg) {
+                loginMsg.innerText = "⚠️ 連線失敗，請稍後再試或重新整理頁面。(" + msg + ")";
+            } else {
+                // 非登入流程的失敗（如重整資料），顯示固定 banner
+                var banner = document.createElement('div');
+                banner.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#d32f2f;color:white;padding:10px 20px;border-radius:12px;z-index:9999;font-weight:bold;box-shadow:0 4px 15px rgba(0,0,0,0.3);';
+                banner.innerText = '⚠️ 連線失敗，請重新整理頁面';
+                document.body.appendChild(banner);
+                setTimeout(function() { banner.remove(); }, 4000);
+            }
+        }
+        function doLogout() { gData = null; isAdminMode = false; document.getElementById('main-screen').style.display = 'none'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('appContainer').classList.remove('admin-mode-border'); document.getElementById('god-mode-exit-btn').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; document.getElementById('loginPass').value = ""; document.getElementById('loginMsg').innerText = ""; }
+
+        // 🔴 修正：renderSchedule 函式，同步更新顏色邏輯
+        function renderSchedule(e, f) {
+            var l = document.getElementById('schedule-list');
+            var de = f ? e.filter(x => x.code === f) : e;
+            if (de.length == 0) { l.innerHTML = "<div style='text-align:center;padding:30px;color:#b0bec5;'>無課程</div>"; return; }
+            var h = "";
+            de.forEach(x => {
+                var cc = "card";
+                if (x.type === "輔導") cc += " tutoring";
+                else if (x.type.includes("放假") || x.type === "停課" || x.status === "suspended") cc += " holiday";
+                else if (x.type === "調課") cc += " modified";
+                else if (x.type === "加課") cc += " added";
+                else if (x.type === "公告") cc += " announcement";
+
+                var th = "";
+                if (x.type === "模考") th = `<span class="tag exam">模考</span>`;
+                else if (x.type === "輔導") th = `<span class="tag tutoring">輔導</span>`;
+                else if (x.type.includes("放假") || x.type === "停課" || x.status === "suspended") th = `<span class="tag holiday">${x.type}</span>`;
+                else if (x.type === "調課") th = `<span class="tag modified">調課</span>`;
+                else if (x.type === "加課") th = `<span class="tag added">加課</span>`;
+                else if (x.type === "公告") th = `<span class="tag announcement">公告</span>`;
+                else th = `<span class="tag">正課</span>`;
+
+                var tc = "title"; if (x.status === "cancelled") tc += " status-cancelled";
+                var nh = ""; if (x.note && x.note.trim() !== "" && x.note.trim() !== x.title.trim()) nh = `<div class="schedule-note">${x.note}</div>`;
+                h += `<div class="${cc}"><div class="date-row"><span class="date-text">📅 ${x.date} (${getDayName(x.date)})</span>${th}</div><div class="${tc}">${x.title}</div>${nh}<div class="time">⏰ ${x.time}</div></div>`;
+            });
+            l.innerHTML = h;
+        }
+
+        function renderGrades(g) {
+            var d = document.getElementById('tab-2').querySelector('.scroll-container');
+            if (g.length == 0) { d.innerHTML = "<div style='text-align:center;color:#aaa;margin-top:30px;'>無成績</div>"; return; }
+            var h = "<div class='card'>";
+            g.forEach((x, i) => {
+                var cId = "sb-" + i;
+                var ct = "";
+                var l1 = x.line1 ? `<div class="exam-line1">${x.line1}</div>` : "";
+                var l2 = x.line2 ? `<div class="exam-line2">${x.line2}</div>` : "";
+                var tm = x.main;
+                if (x.score) {
+                    if (x.isPending) ct = `<div class="score-wrapper"><div class="score-val" style="color:var(--primary);">${x.score}<span class="score-unit">分</span></div><span class="pending-text">(待審核)</span></div>`;
+                    else { var sc = (x.score < 60) ? 'score-red' : ''; ct = `<div class="score-wrapper"><div class="score-val ${sc}">${x.score}<span class="score-unit">分</span></div></div>`; }
+                } else {
+                    ct = `<div id="${cId}" class="score-input-group"><span style="color:var(--danger);font-weight:bold;font-size:0.9rem;">未回報</span><input type="number" class="score-input" id="in-${i}"><button class="submit-btn" onclick="submitScoreUI(${i},'${x.examRaw}')">送出</button></div>`;
+                }
+                h += `<div class="score-row"><div class="exam-name-container">${l1}${l2}<div class="exam-main">${tm}</div></div>${ct}</div>`;
+            });
+            h += "</div>";
+            d.innerHTML = h;
+        }
+
+        function submitScoreUI(i, n) { var v = document.getElementById('in-' + i).value; if (!v) return; var c = document.getElementById('sb-' + i); c.outerHTML = `<div class="score-wrapper"><div class="score-val" style="color:#1565C0;">${v}<span class="score-unit">分</span></div><span class="pending-text">(待審核)</span></div>`; var f = { grade: gData.student.grade, name: gData.student.name, exam: n, score: v, pass: gPass }; google.script.run.withFailureHandler(e => alert("失敗:" + e)).submitScore(f); }
+        function renderCalendarGrid(e) { var g = document.getElementById('cal-grid'); var y = currentCalDate.getFullYear(); var m = currentCalDate.getMonth(); document.getElementById('cal-nav-title').innerText = y + "年 " + (m + 1) + "月"; var dh = ['日', '一', '二', '三', '四', '五', '六']; var h = ""; dh.forEach(d => h += `<div class="cal-header">${d}</div>`); var fd = new Date(y, m, 1).getDay(); var dm = new Date(y, m + 1, 0).getDate(); var t = new Date(); for (let i = 0; i < fd; i++)h += `<div></div>`; for (let d = 1; d <= dm; d++) { var ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; var evs = e.filter(x => x.date === ds && x.status !== "cancelled"); var cls = "cal-cell"; if (d === t.getDate() && m === t.getMonth() && y === t.getFullYear()) cls += " today"; var eh = ""; var u = new Set(); evs.forEach(x => { var st = x.title.replace(/高[一二三]/, '').replace(/數學/, '數').replace(/物理/, '物').replace(/化學/, '化').replace(/英文/, '英').substring(0, 4); if (!u.has(st)) { u.add(st); var dc = "cal-dot"; if (x.type === "輔導") dc += " tutoring"; else if (x.type.includes("放假") || x.type === "停課" || x.status === "suspended") dc += " holiday"; else if (x.type === "模考") dc += " exam"; if (x.type !== "彈窗") eh += `<div class="${dc}">${st}</div>`; } }); h += `<div class="${cls}"><div class="cal-date">${d}</div>${eh}</div>`; } g.innerHTML = h; }
+        function switchTab(i) { document.querySelectorAll('.tab-item').forEach((t, k) => { if (k === i) t.classList.add('active'); else t.classList.remove('active'); }); document.getElementById('tab-0').style.display = (i === 0) ? 'flex' : 'none'; document.getElementById('tab-1').style.display = (i === 1) ? 'flex' : 'none'; document.getElementById('tab-2').style.display = (i === 2) ? 'flex' : 'none'; if (i === 1) backToCourseList(); if (i === 0) { setTimeout(scrollToTodayList, 100); } else { window.scrollTo(0, 0); } }
+        function getDayName(d) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(d).getDay()]; }
+
+        // 從課程代碼推斷學生年級顯示（如「114學年度 高二上學期」）
+        function inferGradeDisplay(courses, fallback) {
+            if (!courses || courses.length === 0) return fallback || '';
+            var maxYear = 0, maxSem = 0, maxGrade = 0;
+            courses.forEach(function(code) {
+                var m = code.match(/^\[(\d+)-(\d)-(\d)\]/);
+                if (m) {
+                    var y = parseInt(m[1]), g = parseInt(m[2]), s = parseInt(m[3]);
+                    if (y > maxYear || (y === maxYear && g > maxGrade) || (y === maxYear && g === maxGrade && s > maxSem)) {
+                        maxYear = y; maxGrade = g; maxSem = s;
+                    }
+                }
+            });
+            if (maxYear === 0) return fallback || '';
+            var semStr = maxSem === 1 ? '上學期' : '下學期';
+            var gradeNames = ['', '高一', '高二', '高三'];
+            var gradeStr = gradeNames[maxGrade] || '';
+            return maxYear + '學年度 ' + gradeStr + semStr;
+        }
+    </script>
+
+</body>
+
+</html>
