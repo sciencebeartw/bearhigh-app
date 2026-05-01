@@ -953,7 +953,27 @@
             background: var(--primary);
             color: white;
         }
+
+        /* PWA / LINE Tutorial */
+        .line-tutorial-container { width: 220px; height: 160px; margin: 15px auto; position: relative; border: 2px solid #bdc3c7; border-radius: 10px; background: #ecf0f1; overflow: hidden; font-family: sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .lt-footer { height: 40px; background: #1c1c1e; position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 15px; }
+        .lt-menu-btn { width: 24px; height: 24px; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; }
+        .lt-menu-dot { width: 4px; height: 4px; background: white; border-radius: 50%; }
+        .lt-dropdown { position: absolute; bottom: 45px; right: 10px; background: #333; box-shadow: 0 -3px 8px rgba(0,0,0,0.25); border-radius: 8px; padding: 6px; font-size: 11px; color: white; opacity: 0; transform: scale(0.9); transform-origin: bottom right; animation: dropdownShow 4s infinite; }
+        .lt-dropdown-item { background: #444; padding: 8px 12px; border-radius: 6px; font-weight: bold; }
+        .lt-cursor { width: 16px; height: 16px; background: rgba(52, 152, 219, 0.9); border-radius: 50%; position: absolute; top: 70px; left: 110px; box-shadow: 0 0 0 2px rgba(255,255,255,0.9); animation: cursorMove 4s infinite; z-index: 10; }
+        .lt-click-ripple { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border: 2px solid #3498db; border-radius: 50%; opacity: 0; animation: rippleEffect 4s infinite; }
+        @keyframes cursorMove { 0% { top: 70px; left: 110px; } 15%, 25% { top: 135px; left: 192px; } 35%, 45% { top: 100px; left: 135px; } 100% { top: 70px; left: 110px; } }
+        @keyframes dropdownShow { 0%, 15%, 53%, 100% { opacity: 0; transform: scale(0.9); } 20%, 48% { opacity: 1; transform: scale(1); } }
+        @keyframes rippleEffect { 0%, 18%, 25%, 38%, 45%, 100% { opacity: 0; } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); } 40% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); } }
+        .pwa-tutorial-ios { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 15px; }
+        .pwa-step { display: flex; align-items: center; gap: 15px; width: 100%; text-align: left; }
+        .pwa-icon-box { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #eee; border-radius: 10px; flex-shrink: 0; }
+        .pwa-icon-share { width: 24px; height: 24px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23007AFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/%3E%3Cpolyline points='16 6 12 2 8 6'/%3E%3Cline x1='12' y1='2' x2='12' y2='15'/%3E%3C/svg%3E"); background-size: contain; }
+        .pwa-icon-add { width: 24px; height: 24px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='12' y1='8' x2='12' y2='16'/%3E%3Cline x1='8' y1='12' x2='16' y2='12'/%3E%3C/svg%3E"); background-size: contain; }
     </style>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -1133,6 +1153,77 @@
             </div>
         </div>
     </div>
+
+    <!-- LINE/FB/IG 偵測到時顯示的全頁教學層（初始隱藏）-->
+    <div id="line-tutorial-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #f5f5f7; z-index: 25000; align-items: center; justify-content: center; flex-direction: column; padding: 24px; box-sizing: border-box;">
+        <div style="width:100%; max-width:380px;">
+            <div style="text-align:center; margin-bottom:18px;">
+                <img src="https://www.sciencebear.com.tw/ebook/LOGO.png" style="width:70px; height:70px; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.15);" alt="山熊科學">
+                <div style="margin-top:8px; font-size:13px; color:#666;">山熊升大系統</div>
+            </div>
+            <div style="background:rgba(231,76,60,0.1); border:2px solid #e74c3c; border-radius:14px; padding:14px 16px; margin-bottom:16px; text-align:center;">
+                <div style="color:#c0392b; font-weight:bold; font-size:16px; margin-bottom:5px;">🛑 請勿在 LINE 內開啟</div>
+                <div style="color:#555; font-size:13px; line-height:1.6;">系統驗證<b>不支援 LINE 內建瀏覽器</b><br>可能導致功能異常</div>
+            </div>
+            <div style="background:white; border-radius:16px; padding:18px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+                <div style="font-weight:bold; color:#2980b9; font-size:14px; margin-bottom:14px; text-align:center;">👉 請依下方動畫指示操作</div>
+                <div class="line-tutorial-container"><div class="lt-dropdown"><div class="lt-dropdown-item">在瀏覽器中開啟</div></div><div class="lt-footer"><div class="lt-menu-btn"><div class="lt-menu-dot"></div><div class="lt-menu-dot"></div><div class="lt-menu-dot"></div></div></div><div class="lt-cursor"><div class="lt-click-ripple"></div></div></div>
+                <div style="text-align:center; font-size:14px; color:#444; margin-top:14px; line-height:1.7;">點擊畫面<b>右下角的 [ ⋮ ]</b><br>選擇<b>「以 Safari 或 Chrome 開啟」</b></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA/Browser Detection Logic -->
+    <script>
+        (function () {
+            var ua = (navigator.userAgent || navigator.vendor || window.opera);
+            var isLine = ua.indexOf("Line/") > -1;
+            var isFB = ua.indexOf("FBAN") > -1 || ua.indexOf("FBAV") > -1;
+            var isIG = ua.indexOf("Instagram") > -1;
+            var isiOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+            var isAndroid = /Android/.test(ua);
+            var isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
+
+            function startDetection() {
+                if (isLine || isFB || isIG) {
+                    var overlay = document.getElementById('line-tutorial-overlay');
+                    if (overlay) overlay.style.display = 'flex';
+                    // 不讓用戶繼續使用
+                    return;
+                }
+
+                if (isiOS || isAndroid) {
+                    if (isStandalone) return; 
+                    var pwaBtn = isiOS
+                        ? '<div class="pwa-tutorial-ios"><div class="pwa-step"><div class="pwa-icon-box"><div class="pwa-icon-share"></div></div><div>1. 點擊瀏覽器下方的<b>「分享」</b>按鈕</div></div><div class="pwa-step"><div class="pwa-icon-box"><div class="pwa-icon-add"></div></div><div>2. 向上捲動並點擊<b>「加入主畫面」</b></div></div></div>'
+                        : '<div style="padding:10px;text-align:left;"><p>1. 點擊右上角的<b>「⋮」選單</b></p><p>2. 選擇<b>「安裝應用程式」</b>或<b>「將網頁加入主畫面」</b></p></div>';
+
+                    // 只跳一次，用 sessionStorage 記錄
+                    if(!sessionStorage.getItem('pwaShown')) {
+                        sessionStorage.setItem('pwaShown', 'true');
+                        setTimeout(function() {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: '📱 安裝為桌面 App',
+                                    html: '<div style="font-size:15px;line-height:1.5;">將本系統加到桌面，就像 App 一樣隨開即用！<br><br>' + pwaBtn + '</div>',
+                                    icon: 'info',
+                                    showCancelButton: false,
+                                    confirmButtonText: '了解！開始使用',
+                                    confirmButtonColor: '#1565C0'
+                                });
+                            }
+                        }, 1000);
+                    }
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startDetection);
+            } else {
+                startDetection();
+            }
+        })();
+    </script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
