@@ -1410,6 +1410,10 @@
             document.getElementById('full-loader').style.display = 'none';
             if (!res.success) { document.getElementById('loginMsg').innerText = res.msg; return; }
             document.getElementById('login-screen').style.display = 'none';
+
+            // 防呆：如果已經進入上帝視角，忽略 Admin 的 Firebase 重新連線更新，避免畫面重疊
+            if (isAdminMode && res.isAdmin) return;
+
             if (res.isAdmin) {
                 adminToken = res.token;
                 showAdminDashboard();
