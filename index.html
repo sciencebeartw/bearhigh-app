@@ -1668,24 +1668,54 @@
         function switchTab(i) { document.querySelectorAll('.tab-item').forEach((t, k) => { if (k === i) t.classList.add('active'); else t.classList.remove('active'); }); document.getElementById('tab-0').style.display = (i === 0) ? 'flex' : 'none'; document.getElementById('tab-1').style.display = (i === 1) ? 'flex' : 'none'; document.getElementById('tab-2').style.display = (i === 2) ? 'flex' : 'none'; if (i === 1) backToCourseList(); if (i === 0) { setTimeout(scrollToTodayList, 100); } else { window.scrollTo(0, 0); } }
         function getDayName(d) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(d).getDay()]; }
 
-        // 從課程代碼推斷學生年級顯示（如「114學年度 高二上學期」）
+        // 從課程代碼與當前時間推斷學生年級顯示（如「114學年度 高二上學期」）
         function inferGradeDisplay(courses, fallback) {
+            // 1. 以當前時鐘為基準決定顯示的學期
+            var now = new Date();
+            var currentMonth = now.getMonth() + 1;
+            // 8月至隔年1月為上學期，2月至7月為下學期
+            // 學年度計算：8月後為今年，1-7月為去年
+            var currentYear = (currentMonth >= 8) ? (now.getFullYear() - 1911) : (now.getFullYear() - 1912);
+            var currentSem = (currentMonth >= 2 && currentMonth <= 7) ? 2 : 1;
+
             if (!courses || courses.length === 0) return fallback || '';
-            var maxYear = 0, maxSem = 0, maxGrade = 0;
+
+            // 2. 決定年級：優先找符合當前學年度的課程，若無則找最新的課程
+            var displayGrade = 0;
+            var maxYear = 0, maxGrade = 0, maxSem = 0;
+
             courses.forEach(function(code) {
                 var m = code.match(/^\[(\d+)-(\d)-(\d)\]/);
                 if (m) {
                     var y = parseInt(m[1]), g = parseInt(m[2]), s = parseInt(m[3]);
+                    // 記錄所有課程中的最新資訊 (Fallback)
                     if (y > maxYear || (y === maxYear && g > maxGrade) || (y === maxYear && g === maxGrade && s > maxSem)) {
                         maxYear = y; maxGrade = g; maxSem = s;
                     }
+                    // 精確匹配當前時間
+                    if (y === currentYear && s === currentSem) {
+                        displayGrade = g;
+                    }
                 }
             });
-            if (maxYear === 0) return fallback || '';
-            var semStr = maxSem === 1 ? '上學期' : '下學期';
+
+            // 最終決定顯示內容
+            var finalYear = currentYear;
+            var finalSem = currentSem;
+            var finalGrade = displayGrade || maxGrade; // 若無當前課程，取最新年級
+
+            // 如果學生的最新課程已經是未來的（例如現在114下，學生只有115上的課），
+            // 則年級需要往回推算（假設學生每年升一級）
+            if (displayGrade === 0 && maxYear > currentYear) {
+                var yearDiff = maxYear - currentYear;
+                finalGrade = maxGrade - yearDiff;
+                if (finalGrade < 1) finalGrade = 1;
+            }
+
+            var semStr = finalSem === 1 ? '上學期' : '下學期';
             var gradeNames = ['', '高一', '高二', '高三'];
-            var gradeStr = gradeNames[maxGrade] || '';
-            return maxYear + '學年度 ' + gradeStr + semStr;
+            var gradeStr = gradeNames[finalGrade] || '';
+            return finalYear + '學年度 ' + gradeStr + semStr;
         }
     </script>
 
