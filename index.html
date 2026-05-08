@@ -526,6 +526,8 @@
             margin-bottom: 5px;
         }
 
+
+
         /* Course Item */
         .course-item {
             background: white;
@@ -818,6 +820,14 @@
             font-weight: bold;
             margin-top: 4px;
             display: block;
+        }
+
+        .pending-text.sync-queued {
+            color: #1565C0;
+        }
+
+        .pending-text.sync-failed {
+            color: var(--danger);
         }
 
         .score-wrapper {
@@ -1233,6 +1243,22 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyE_Mcd1hBLAgt1TXr-oezzXqts_ruoovBqgGFWPHTsEhqmjGp1FT4qhqVsVzJ8xZgNwg/exec"; 
+
+        function toFirebaseKey(value) {
+            return String(value || "").replace(/[.#$[\]\/]/g, "-");
+        }
+
+        function toStudentKey(value) {
+            return String(value || "").replace(/[.#$[\]\/]/g, ",");
+        }
+
+        function buildScoreQueueKey(grade, name, exam) {
+            return toFirebaseKey([grade, name, exam].join("|"));
+        }
+
+        function hasScoreValue(value) {
+            return value !== null && value !== undefined && value !== "";
+        }
         
         function doPostAction(action, data, onSuccess, onErr, adminPwd, retries = 3) {
             if(SCRIPT_URL.includes("請在後續部署後換上正確的")) {
@@ -1363,9 +1389,24 @@
                     doPostAction("addCalendarEvent", f, onSuccess, onErr);
                 },
                 submitScore: function(f) {
-                    doPostAction("submit_score", f, onSuccess, onErr);
+                    doPostAction("process_score_queue", f, onSuccess, onErr);
                 }
             };
+        }
+
+        function kickScoreQueueProcessor(queueKey) {
+            doPostAction(
+                "process_score_queue",
+                { queueKey: queueKey || "" },
+                function(res) {
+                    if (!res || !res.success) console.warn("成績佇列背景同步尚未完成:", res);
+                },
+                function(err) {
+                    console.warn("成績已先排隊，背景同步稍後重試:", err);
+                },
+                "",
+                1
+            );
         }
     
         const google = {
@@ -1655,11 +1696,12 @@
                 var l1 = x.line1 ? `<div class="exam-line1">${x.line1}</div>` : "";
                 var l2 = x.line2 ? `<div class="exam-line2">${x.line2}</div>` : "";
                 var tm = x.main;
-                if (x.score) {
-                    if (x.isPending) ct = `<div class="score-wrapper"><div class="score-val" style="color:var(--primary);">${x.score}<span class="score-unit">分</span></div><span class="pending-text">(待審核)</span></div>`;
+                if (hasScoreValue(x.score)) {
+                    if (x.isPending) ct = renderPendingScore(x.score, x.syncStatus);
                     else { var sc = (x.score < 60) ? 'score-red' : ''; ct = `<div class="score-wrapper"><div class="score-val ${sc}">${x.score}<span class="score-unit">分</span></div></div>`; }
                 } else {
-                    ct = `<div id="${cId}" class="score-input-group"><span style="color:var(--danger);font-weight:bold;font-size:0.9rem;">未回報</span><input type="number" class="score-input" id="in-${i}"><button class="submit-btn" onclick="submitScoreUI(${i},'${x.examRaw}')">送出</button></div>`;
+                    var encodedExam = encodeURIComponent(x.examRaw || "");
+                    ct = `<div id="${cId}" class="score-input-group"><span style="color:var(--danger);font-weight:bold;font-size:0.9rem;">未回報</span><input type="number" class="score-input" id="in-${i}"><button class="submit-btn" onclick="submitScoreUI(${i},decodeURIComponent('${encodedExam}'))">送出</button></div>`;
                 }
                 h += `<div class="score-row"><div class="exam-name-container">${l1}${l2}<div class="exam-main">${tm}</div></div>${ct}</div>`;
             });
@@ -1667,7 +1709,62 @@
             d.innerHTML = h;
         }
 
-        function submitScoreUI(i, n) { var v = document.getElementById('in-' + i).value; if (!v) return; var c = document.getElementById('sb-' + i); c.outerHTML = `<div class="score-wrapper"><div class="score-val" style="color:#1565C0;">${v}<span class="score-unit">分</span></div><span class="pending-text">(待審核)</span></div>`; var f = { grade: gData.student.grade, name: gData.student.name, exam: n, score: v, pass: gPass }; google.script.run.withFailureHandler(e => alert("失敗:" + e)).submitScore(f); }
+        function renderPendingScore(score, syncStatus) {
+            var label = "待審核";
+            var cls = "";
+            if (syncStatus === "queued") { label = "等待同步"; cls = " sync-queued"; }
+            else if (syncStatus === "processing") { label = "同步中"; cls = " sync-queued"; }
+            else if (syncStatus === "failed") { label = "等待重試"; cls = " sync-failed"; }
+            return `<div class="score-wrapper"><div class="score-val" style="color:var(--primary);">${score}<span class="score-unit">分</span></div><span class="pending-text${cls}">(${label})</span></div>`;
+        }
+
+        async function submitScoreUI(i, n) {
+            var input = document.getElementById('in-' + i);
+            if (!input) return;
+            var v = input.value;
+            if (!v) return;
+
+            var c = document.getElementById('sb-' + i);
+            var safeName = toStudentKey(gData.student.name);
+            var queueKey = buildScoreQueueKey(gData.student.grade, gData.student.name, n);
+            var now = firebase.database.ServerValue.TIMESTAMP;
+            var queueItem = {
+                grade: gData.student.grade,
+                name: gData.student.name,
+                exam: n,
+                score: v,
+                status: "queued",
+                source: "bearhigh-app",
+                createdAt: now,
+                updatedAt: now
+            };
+
+            if (c) c.outerHTML = renderPendingScore(v, "queued");
+
+            if (!gData.grades) gData.grades = [];
+            var previousGrade = Object.assign({}, gData.grades[i] || {});
+            if (!gData.grades[i]) gData.grades[i] = {};
+            gData.grades[i].score = v;
+            gData.grades[i].isPending = true;
+            gData.grades[i].syncStatus = "queued";
+            gData.grades[i].queueKey = queueKey;
+
+            var updates = {};
+            updates['/high/scoreQueue/' + queueKey] = queueItem;
+            updates['/high/students/' + safeName + '/grades/' + i + '/score'] = v;
+            updates['/high/students/' + safeName + '/grades/' + i + '/isPending'] = true;
+            updates['/high/students/' + safeName + '/grades/' + i + '/syncStatus'] = "queued";
+            updates['/high/students/' + safeName + '/grades/' + i + '/queueKey'] = queueKey;
+
+            try {
+                await db.ref().update(updates);
+                kickScoreQueueProcessor(queueKey);
+            } catch (e) {
+                gData.grades[i] = previousGrade;
+                renderGrades(gData.grades);
+                alert("目前網路不穩，成績尚未送出，請再按一次。");
+            }
+        }
         function renderCalendarGrid(e) { var g = document.getElementById('cal-grid'); var y = currentCalDate.getFullYear(); var m = currentCalDate.getMonth(); document.getElementById('cal-nav-title').innerText = y + "年 " + (m + 1) + "月"; var dh = ['日', '一', '二', '三', '四', '五', '六']; var h = ""; dh.forEach(d => h += `<div class="cal-header">${d}</div>`); var fd = new Date(y, m, 1).getDay(); var dm = new Date(y, m + 1, 0).getDate(); var t = new Date(); for (let i = 0; i < fd; i++)h += `<div></div>`; for (let d = 1; d <= dm; d++) { var ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; var evs = e.filter(x => x.date === ds && x.status !== "cancelled"); var cls = "cal-cell"; if (d === t.getDate() && m === t.getMonth() && y === t.getFullYear()) cls += " today"; var eh = ""; var u = new Set(); evs.forEach(x => { var st = x.title.replace(/高[一二三]/, '').replace(/數學/, '數').replace(/物理/, '物').replace(/化學/, '化').replace(/英文/, '英').substring(0, 4); if (!u.has(st)) { u.add(st); var dc = "cal-dot"; if (x.type === "輔導") dc += " tutoring"; else if (x.type.includes("放假") || x.type === "停課" || x.status === "suspended") dc += " holiday"; else if (x.type === "模考") dc += " exam"; if (x.type !== "彈窗") eh += `<div class="${dc}">${st}</div>`; } }); h += `<div class="${cls}"><div class="cal-date">${d}</div>${eh}</div>`; } g.innerHTML = h; }
         function switchTab(i) { document.querySelectorAll('.tab-item').forEach((t, k) => { if (k === i) t.classList.add('active'); else t.classList.remove('active'); }); document.getElementById('tab-0').style.display = (i === 0) ? 'flex' : 'none'; document.getElementById('tab-1').style.display = (i === 1) ? 'flex' : 'none'; document.getElementById('tab-2').style.display = (i === 2) ? 'flex' : 'none'; if (i === 1) backToCourseList(); if (i === 0) { setTimeout(scrollToTodayList, 100); } else { window.scrollTo(0, 0); } }
         function getDayName(d) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(d).getDay()]; }
