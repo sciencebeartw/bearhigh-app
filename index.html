@@ -1263,6 +1263,20 @@
         function normalizeLoginPassword(value) {
             return String(value || "").replace(/-/g, "").trim();
         }
+
+        let activeRealtimeRefs = [];
+
+        function clearRealtimeListeners() {
+            activeRealtimeRefs.forEach(ref => ref.off('value'));
+            activeRealtimeRefs = [];
+        }
+
+        function listenToValue(ref, handler, onErr) {
+            clearRealtimeListeners();
+            ref.off('value');
+            ref.on('value', handler, onErr);
+            activeRealtimeRefs.push(ref);
+        }
         
         function doPostAction(action, data, onSuccess, onErr, adminPwd, retries = 3) {
             if(SCRIPT_URL.includes("請在後續部署後換上正確的")) {
@@ -1292,39 +1306,52 @@
     
         function createApiMethods(onSuccess, onErr) {
             return {
-                getStudentData: async function(name, pass) {
-                    try {
-                        const safeName = name.replace(/[.#$[\]]/g, ',');
-                        db.ref('/high/students/' + safeName).once('value').then(snap => {
-                            if (snap.exists()) {
-                                const ref = db.ref('/high/students/' + safeName);
-                                ref.off('value');
-                                ref.on('value', snap2 => {
-                                    const val = snap2.val();
-                                    if (!val) { if(onSuccess) onSuccess({success: false, msg: "找不到該學生"}); return; }
-                                    const studentInfo = val.student || {};
-                                    const inputPwd = normalizeLoginPassword(pass);
-                                    const storedPwd = (val.sysPwd || "").toString().trim();
-                                    const parentPwd = normalizeLoginPassword(studentInfo.parent_phone);
-                                    const studentPwd = normalizeLoginPassword(studentInfo.student_phone);
-                                    const isPassCorrect = storedPwd
-                                        ? inputPwd === normalizeLoginPassword(storedPwd)
-                                        : (parentPwd && inputPwd === parentPwd) || (studentPwd && inputPwd === studentPwd);
-                                    if (!isPassCorrect) { if(onSuccess) onSuccess({success: false, msg: "密碼錯誤"}); return; }
-                                    val.success = true;
-                                    if(onSuccess) onSuccess(val);
-                                }, err => { if(onErr) onErr(err); });
-                            } else {
-                                db.ref('/high/teachers/' + safeName).once('value').then(snap3 => {
-                                    if (snap3.exists()) {
-                                        const ref = db.ref('/high/teachers/' + safeName);
-                                        ref.off('value');
-                                        ref.on('value', snap4 => {
-                                            const val = snap4.val();
-                                            if (!val) { if(onSuccess) onSuccess({success: false, msg: "找不到該老師"}); return; }
-                                            const storedPwd = (val.password || "").toString().trim();
-                                            if (normalizeLoginPassword(storedPwd) !== normalizeLoginPassword(pass)) { if(onSuccess) onSuccess({success: false, msg: "密碼錯誤"}); return; }
-                                            val.success = true;
+                    getStudentData: async function(name, pass) {
+                        try {
+                            const safeName = name.replace(/[.#$[\]]/g, ',');
+                            db.ref('/high/students/' + safeName).once('value').then(snap => {
+                                if (snap.exists()) {
+                                    const ref = db.ref('/high/students/' + safeName);
+                                    const initialVal = snap.val();
+                                    const initialStudentInfo = initialVal.student || {};
+                                    const initialInputPwd = normalizeLoginPassword(pass);
+                                    const initialStoredPwd = (initialVal.sysPwd || "").toString().trim();
+                                    const initialParentPwd = normalizeLoginPassword(initialStudentInfo.parent_phone);
+                                    const initialStudentPwd = normalizeLoginPassword(initialStudentInfo.student_phone);
+                                    const initialPassCorrect = initialStoredPwd
+                                        ? initialInputPwd === initialStoredPwd
+                                        : (initialParentPwd && initialInputPwd === initialParentPwd) || (initialStudentPwd && initialInputPwd === initialStudentPwd);
+                                    if (!initialPassCorrect) { if(onSuccess) onSuccess({success: false, msg: "密碼錯誤"}); return; }
+
+                                    listenToValue(ref, snap2 => {
+                                        const val = snap2.val();
+                                        if (!val) { if(onSuccess) onSuccess({success: false, msg: "找不到該學生"}); return; }
+                                        const studentInfo = val.student || {};
+                                        const inputPwd = normalizeLoginPassword(pass);
+                                        const storedPwd = (val.sysPwd || "").toString().trim();
+                                        const parentPwd = normalizeLoginPassword(studentInfo.parent_phone);
+                                        const studentPwd = normalizeLoginPassword(studentInfo.student_phone);
+                                        const isPassCorrect = storedPwd
+                                            ? inputPwd === storedPwd
+                                            : (parentPwd && inputPwd === parentPwd) || (studentPwd && inputPwd === studentPwd);
+                                        if (!isPassCorrect) { if(onSuccess) onSuccess({success: false, msg: "密碼錯誤"}); return; }
+                                        val.success = true;
+                                        if(onSuccess) onSuccess(val);
+                                    }, err => { if(onErr) onErr(err); });
+                                } else {
+                                    db.ref('/high/teachers/' + safeName).once('value').then(snap3 => {
+                                        if (snap3.exists()) {
+                                            const ref = db.ref('/high/teachers/' + safeName);
+                                            const initialTeacher = snap3.val();
+                                            const initialTeacherPwd = (initialTeacher.password || "").toString().trim();
+                                            if (initialTeacherPwd !== pass.toString().trim()) { if(onSuccess) onSuccess({success: false, msg: "密碼錯誤"}); return; }
+
+                                            listenToValue(ref, snap4 => {
+                                                const val = snap4.val();
+                                                if (!val) { if(onSuccess) onSuccess({success: false, msg: "找不到該老師"}); return; }
+                                                const storedPwd = (val.password || "").toString().trim();
+                                                if (storedPwd !== pass.toString().trim()) { if(onSuccess) onSuccess({success: false, msg: "密碼錯誤"}); return; }
+                                                val.success = true;
                                             
                                             // 動態判斷：如果是 admin 登入，且密碼驗證通過，則給予上帝視角權限
                                             if (name.toLowerCase() === "admin" || (val.account && val.account.toLowerCase() === "admin")) {
@@ -1341,20 +1368,19 @@
                             }
                         }).catch(err => { if(onErr) onErr(err); });
                     } catch(e) { if(onErr) onErr(e); }
-                },
-                getStudentDataByAdmin: async function(cls, name, adminToken) {
-                    try {
-                        const safeName = name.replace(/[.#$[\]]/g, ',');
-                        const ref = db.ref('/high/students/' + safeName);
-                        ref.off('value');
-                        ref.on('value', snap => {
-                            const val = snap.val();
-                            if (!val) { if(onErr) onErr({success: false, msg: "找不到該學生"}); return; }
-                            val.success = true;
-                            if(onSuccess) onSuccess(val);
-                        }, err => { if(onErr) onErr(err); });
-                    } catch(e) { if(onErr) onErr(e); }
-                },
+                    },
+                    getStudentDataByAdmin: async function(cls, name, adminToken) {
+                        try {
+                            const safeName = name.replace(/[.#$[\]]/g, ',');
+                            const ref = db.ref('/high/students/' + safeName);
+                            listenToValue(ref, snap => {
+                                const val = snap.val();
+                                if (!val) { if(onErr) onErr({success: false, msg: "找不到該學生"}); return; }
+                                val.success = true;
+                                if(onSuccess) onSuccess(val);
+                            }, err => { if(onErr) onErr(err); });
+                        } catch(e) { if(onErr) onErr(e); }
+                    },
                 getAllClassNames: async function() {
                     try {
                         const snap = await db.ref('/high/meta/grades').once('value');
@@ -1453,6 +1479,7 @@
             var pass = document.getElementById('loginPass').value.trim();
             if (!name || !pass) { document.getElementById('loginMsg').innerText = "請輸入完整資訊"; return; }
             document.getElementById('full-loader').style.display = 'flex';
+            clearRealtimeListeners();
             gPass = pass;
             isFirstLoad = true;
             google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFail).getStudentData(name, pass);
@@ -1645,9 +1672,9 @@
             }).addCalendarEvent(f);
         }
 
-        function startGodMode() { var c = document.getElementById('adminClassSelect').value; var n = document.getElementById('adminStudentSelect').value; if (!c || !n) { alert("請選擇"); return; } document.getElementById('full-loader').style.display = 'flex'; isAdminMode = true; google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; if (r.success) { document.getElementById('admin-screen').style.display = 'none'; document.getElementById('appContainer').classList.add('admin-mode-border'); document.getElementById('god-mode-exit-btn').style.display = 'block'; enterStudentView(r); } else { alert(r.msg); } }).getStudentDataByAdmin(c, n, adminToken); }
-        function exitGodMode() { isAdminMode = false; gData = null; document.getElementById('main-screen').style.display = 'none'; document.getElementById('god-mode-exit-btn').style.display = 'none'; document.getElementById('appContainer').classList.remove('admin-mode-border'); document.getElementById('admin-screen').style.display = 'block'; }
-        function refreshData() { if (!gData) return; document.getElementById('full-loader').style.display = 'flex'; if (isAdminMode) { google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; enterStudentView(r); }).getStudentDataByAdmin(gData.student.grade, gData.student.name, adminToken); } else { google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; enterStudentView(r); }).getStudentData(gData.student.name, gPass); } }
+        function startGodMode() { var c = document.getElementById('adminClassSelect').value; var n = document.getElementById('adminStudentSelect').value; if (!c || !n) { alert("請選擇"); return; } document.getElementById('full-loader').style.display = 'flex'; clearRealtimeListeners(); isAdminMode = true; google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; if (r.success) { document.getElementById('admin-screen').style.display = 'none'; document.getElementById('appContainer').classList.add('admin-mode-border'); document.getElementById('god-mode-exit-btn').style.display = 'block'; enterStudentView(r); } else { alert(r.msg); } }).getStudentDataByAdmin(c, n, adminToken); }
+        function exitGodMode() { clearRealtimeListeners(); isAdminMode = false; gData = null; document.getElementById('main-screen').style.display = 'none'; document.getElementById('god-mode-exit-btn').style.display = 'none'; document.getElementById('appContainer').classList.remove('admin-mode-border'); document.getElementById('admin-screen').style.display = 'block'; }
+        function refreshData() { if (!gData) return; document.getElementById('full-loader').style.display = 'flex'; clearRealtimeListeners(); if (isAdminMode) { google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; enterStudentView(r); }).getStudentDataByAdmin(gData.student.grade, gData.student.name, adminToken); } else { google.script.run.withSuccessHandler(function (r) { document.getElementById('full-loader').style.display = 'none'; enterStudentView(r); }).getStudentData(gData.student.name, gPass); } }
         function onFail(e) {
             document.getElementById('full-loader').style.display = 'none';
             var msg = "";
@@ -1670,7 +1697,7 @@
                 setTimeout(function() { banner.remove(); }, 4000);
             }
         }
-        function doLogout() { gData = null; isAdminMode = false; document.getElementById('main-screen').style.display = 'none'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('appContainer').classList.remove('admin-mode-border'); document.getElementById('god-mode-exit-btn').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; document.getElementById('loginPass').value = ""; document.getElementById('loginMsg').innerText = ""; }
+        function doLogout() { clearRealtimeListeners(); gData = null; isAdminMode = false; document.getElementById('main-screen').style.display = 'none'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('appContainer').classList.remove('admin-mode-border'); document.getElementById('god-mode-exit-btn').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; document.getElementById('loginPass').value = ""; document.getElementById('loginMsg').innerText = ""; }
 
         // 🔴 修正：renderSchedule 函式，同步更新顏色邏輯
         function renderSchedule(e, f) {
